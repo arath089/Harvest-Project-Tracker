@@ -1,0 +1,32 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "510870210fee5de8bebe2d5b3021b283"
+name = "harvest-project-tracker"
+handle = "harvest-project-tracker-1"
+application_url = "https://essence-fans-birmingham-paradise.trycloudflare.com"
+embedded = true
+
+[build]
+automatically_update_urls_on_dev = true
+dev_store_url = "grants-playground.myshopify.com"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "write_products"
+
+[auth]
+redirect_urls = [
+  "https://essence-fans-birmingham-paradise.trycloudflare.com/auth/callback",
+  "https://essence-fans-birmingham-paradise.trycloudflare.com/auth/shopify/callback",
+  "https://essence-fans-birmingham-paradise.trycloudflare.com/api/auth/callback"
+]
+
+[webhooks]
+api_version = "2024-10"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app/uninstalled"
+
+[pos]
+embedded = false
