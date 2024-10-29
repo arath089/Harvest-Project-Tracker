@@ -1,7 +1,16 @@
 import { useLoaderData } from "@remix-run/react";
 import { json } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
-import { Page, Layout, Text, Card, BlockStack, List } from "@shopify/polaris";
+import {
+  Page,
+  Layout,
+  Text,
+  Card,
+  BlockStack,
+  List,
+  DatePicker,
+} from "@shopify/polaris";
+import { useState } from "react";
 
 export const loader = async ({ request }) => {
   await authenticate.admin(request);
@@ -67,6 +76,21 @@ export const loader = async ({ request }) => {
 export default function Index() {
   const { user, timeEntries } = useLoaderData();
 
+  // State for selected date in the DatePicker
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  // Filter time entries by selected date
+  const filteredEntries = timeEntries.filter((entry) => {
+    return (
+      new Date(entry.spent_date).toDateString() === selectedDate.toDateString()
+    );
+  });
+
+  // Handle date selection change
+  const handleDateChange = (date) => {
+    setSelectedDate(new Date(date.start));
+  };
+
   return (
     <Page>
       <BlockStack gap="500">
@@ -95,26 +119,45 @@ export default function Index() {
             </Card>
           </Layout.Section>
 
+          {/* Date Picker Section */}
+          <Layout.Section>
+            <Card title="Select Date">
+              <DatePicker
+                month={selectedDate.getMonth()}
+                year={selectedDate.getFullYear()}
+                onChange={handleDateChange}
+                onMonthChange={(month, year) =>
+                  setSelectedDate(new Date(year, month))
+                }
+                selected={{
+                  start: selectedDate,
+                  end: selectedDate,
+                }}
+              />
+            </Card>
+          </Layout.Section>
+
           {/* Time Entries Section */}
           <Layout.Section>
             <Card>
               <BlockStack gap="500">
                 <Text as="h2" variant="headingLg">
-                  Time Entries
+                  Time Entries for {selectedDate.toDateString()}
                 </Text>
                 <List>
-                  {timeEntries.map((entry) => (
-                    <List.Item key={entry.id}>
-                      <Text as="p" variant="headingMd">
-                        {entry.project.name} - {entry.task.name}
-                      </Text>
-                      <Text as="p">Hours: {entry.hours}</Text>
-                      <Text as="p">Notes: {entry.notes || "No notes"}</Text>
-                      <Text as="p">
-                        Date: {new Date(entry.spent_date).toLocaleDateString()}
-                      </Text>
-                    </List.Item>
-                  ))}
+                  {filteredEntries.length > 0 ? (
+                    filteredEntries.map((entry) => (
+                      <List.Item key={entry.id}>
+                        <Text as="p" variant="headingMd">
+                          {entry.project.name} - {entry.task.name}
+                        </Text>
+                        <Text as="p">Hours: {entry.hours}</Text>
+                        <Text as="p">Notes: {entry.notes || "No notes"}</Text>
+                      </List.Item>
+                    ))
+                  ) : (
+                    <Text as="p">No time entries for this date.</Text>
+                  )}
                 </List>
               </BlockStack>
             </Card>
