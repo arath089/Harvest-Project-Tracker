@@ -11,6 +11,9 @@ import {
   DatePicker,
 } from "@shopify/polaris";
 import { useState } from "react";
+import { format } from "date-fns";
+
+const PACIFIC_TZ = "America/Los_Angeles";
 
 export const loader = async ({ request }) => {
   await authenticate.admin(request);
@@ -38,9 +41,9 @@ export const loader = async ({ request }) => {
 
     const userData = await userResponse.json();
 
-    // Fetch time entries from Harvest API
+    // Fetch time entries with Pacific Time zone specified
     const timeEntriesResponse = await fetch(
-      "https://api.harvestapp.com/api/v2/time_entries",
+      "https://api.harvestapp.com/api/v2/time_entries?timezone=America/Los_Angeles",
       {
         headers: {
           Authorization: `Bearer ${process.env.HARVEST_API_TOKEN}`,
@@ -79,11 +82,12 @@ export default function Index() {
   // State for selected date in the DatePicker
   const [selectedDate, setSelectedDate] = useState(new Date());
 
+  // Format selectedDate to "yyyy-MM-dd" for filtering
+  const formattedSelectedDate = format(selectedDate, "yyyy-MM-dd");
+
   // Filter time entries by selected date
   const filteredEntries = timeEntries.filter((entry) => {
-    return (
-      new Date(entry.spent_date).toDateString() === selectedDate.toDateString()
-    );
+    return entry.spent_date === formattedSelectedDate;
   });
 
   // Handle date selection change
@@ -111,6 +115,7 @@ export default function Index() {
                       Name: {user.first_name} {user.last_name}
                     </Text>
                     <Text as="p">Email: {user.email}</Text>
+                    <Text as="p">Timezone: {PACIFIC_TZ}</Text>
                   </div>
                 ) : (
                   <Text as="p">No user data available.</Text>
@@ -142,7 +147,10 @@ export default function Index() {
             <Card>
               <BlockStack gap="500">
                 <Text as="h2" variant="headingLg">
-                  Time Entries for {selectedDate.toDateString()}
+                  Time Entries for{" "}
+                  {selectedDate.toLocaleDateString("en-US", {
+                    timeZone: "America/Los_Angeles",
+                  })}
                 </Text>
                 <List>
                   {filteredEntries.length > 0 ? (
