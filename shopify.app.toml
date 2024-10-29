@@ -3,7 +3,7 @@
 client_id = "510870210fee5de8bebe2d5b3021b283"
 name = "harvest-project-tracker"
 handle = "harvest-project-tracker-1"
-application_url = "https://essence-fans-birmingham-paradise.trycloudflare.com"
+application_url = "https://tan-dependence-infection-rwanda.trycloudflare.com"
 embedded = true
 
 [build]
@@ -16,9 +16,9 @@ scopes = "write_products"
 
 [auth]
 redirect_urls = [
-  "https://essence-fans-birmingham-paradise.trycloudflare.com/auth/callback",
-  "https://essence-fans-birmingham-paradise.trycloudflare.com/auth/shopify/callback",
-  "https://essence-fans-birmingham-paradise.trycloudflare.com/api/auth/callback"
+  "https://tan-dependence-infection-rwanda.trycloudflare.com/auth/callback",
+  "https://tan-dependence-infection-rwanda.trycloudflare.com/auth/shopify/callback",
+  "https://tan-dependence-infection-rwanda.trycloudflare.com/api/auth/callback"
 ]
 
 [webhooks]
