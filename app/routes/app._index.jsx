@@ -9,7 +9,10 @@ import {
   BlockStack,
   List,
   DatePicker,
+  InlineGrid,
+  Box,
 } from "@shopify/polaris";
+import { ClockIcon } from "@shopify/polaris-icons";
 import { useState } from "react";
 import { format } from "date-fns";
 
@@ -79,33 +82,32 @@ export const loader = async ({ request }) => {
 export default function Index() {
   const { user, timeEntries } = useLoaderData();
 
-  // State for selected date in the DatePicker
   const [selectedDate, setSelectedDate] = useState(new Date());
 
-  // Format selectedDate to "yyyy-MM-dd" for filtering
   const formattedSelectedDate = format(selectedDate, "yyyy-MM-dd");
 
-  // Filter time entries by selected date
   const filteredEntries = timeEntries.filter((entry) => {
     return entry.spent_date === formattedSelectedDate;
   });
 
-  // Handle date selection change
   const handleDateChange = (date) => {
     setSelectedDate(new Date(date.start));
   };
 
   return (
-    <Page>
+    <Page fullWidth>
       <BlockStack gap="500">
-        <Layout>
+        <InlineGrid columns={["oneThird", "twoThirds"]}>
           {/* User Information Section */}
           <Layout.Section>
-            <Card>
+            <Card background="bg-surface-warning" padding="500">
               <BlockStack gap="500">
-                <Text as="h1" variant="heading3xl">
-                  Harvest Project Tracker
-                </Text>
+                <BlockStack>
+                  <ClockIcon width={40} source={ClockIcon} tone="base" />
+                  <Text as="h1" variant="heading2xl">
+                    Harvest Project Tracker
+                  </Text>
+                </BlockStack>
                 <Text as="h2" variant="headingLg">
                   User Information
                 </Text>
@@ -122,55 +124,60 @@ export default function Index() {
                 )}
               </BlockStack>
             </Card>
+
+            {/* Date Picker Section */}
+            <Box paddingBlockStart="400">
+              <Card>
+                <DatePicker
+                  month={selectedDate.getMonth()}
+                  year={selectedDate.getFullYear()}
+                  onChange={handleDateChange}
+                  onMonthChange={(month, year) =>
+                    setSelectedDate(new Date(year, month))
+                  }
+                  selected={{
+                    start: selectedDate,
+                    end: selectedDate,
+                  }}
+                />
+              </Card>
+            </Box>
           </Layout.Section>
 
-          {/* Date Picker Section */}
           <Layout.Section>
-            <Card title="Select Date">
-              <DatePicker
-                month={selectedDate.getMonth()}
-                year={selectedDate.getFullYear()}
-                onChange={handleDateChange}
-                onMonthChange={(month, year) =>
-                  setSelectedDate(new Date(year, month))
-                }
-                selected={{
-                  start: selectedDate,
-                  end: selectedDate,
-                }}
-              />
-            </Card>
+            {/* Time Entries Section */}
+            <Box minHeight="1200px">
+              <Card>
+                <BlockStack gap="500">
+                  <Text as="h2" variant="headingLg">
+                    Time Entries for{" "}
+                    {selectedDate.toLocaleDateString("en-US", {
+                      timeZone: "America/Los_Angeles",
+                    })}
+                  </Text>
+                  <List>
+                    {filteredEntries.length > 0 ? (
+                      filteredEntries.map((entry) => (
+                        <List.Item key={entry.id}>
+                          <Text as="p" variant="headingMd">
+                            {entry.project.name} - {entry.task.name}
+                          </Text>
+                          <Text as="p" tone="magic">
+                            Client: {entry.client.name}
+                          </Text>
+                          <Text as="p">Hours: {entry.hours}</Text>
+                          <Text as="p">Notes: {entry.notes || "No notes"}</Text>
+                        </List.Item>
+                      ))
+                    ) : (
+                      <Text as="p">No time entries for this date.</Text>
+                    )}
+                  </List>
+                </BlockStack>
+              </Card>
+            </Box>
           </Layout.Section>
-
-          {/* Time Entries Section */}
-          <Layout.Section>
-            <Card>
-              <BlockStack gap="500">
-                <Text as="h2" variant="headingLg">
-                  Time Entries for{" "}
-                  {selectedDate.toLocaleDateString("en-US", {
-                    timeZone: "America/Los_Angeles",
-                  })}
-                </Text>
-                <List>
-                  {filteredEntries.length > 0 ? (
-                    filteredEntries.map((entry) => (
-                      <List.Item key={entry.id}>
-                        <Text as="p" variant="headingMd">
-                          {entry.project.name} - {entry.task.name}
-                        </Text>
-                        <Text as="p">Hours: {entry.hours}</Text>
-                        <Text as="p">Notes: {entry.notes || "No notes"}</Text>
-                      </List.Item>
-                    ))
-                  ) : (
-                    <Text as="p">No time entries for this date.</Text>
-                  )}
-                </List>
-              </BlockStack>
-            </Card>
-          </Layout.Section>
-        </Layout>
+        </InlineGrid>
       </BlockStack>
     </Page>
   );
