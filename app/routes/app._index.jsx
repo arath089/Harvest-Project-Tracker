@@ -11,10 +11,10 @@ import {
   DatePicker,
   InlineGrid,
   Box,
+  ProgressBar,
 } from "@shopify/polaris";
 import { ClockIcon } from "@shopify/polaris-icons";
 import { useState } from "react";
-import { format } from "date-fns";
 
 const PACIFIC_TZ = "America/Los_Angeles";
 
@@ -34,19 +34,9 @@ export const loader = async ({ request }) => {
       },
     );
 
-    if (!userResponse.ok) {
-      console.error("User API Response Status:", userResponse.status);
-      console.error("User API Response Status Text:", userResponse.statusText);
-      const errorText = await userResponse.text();
-      console.error("User API Response Text:", errorText);
-      throw new Error("Failed to fetch user data from Harvest API");
-    }
-
-    const userData = await userResponse.json();
-
-    // Fetch time entries with Pacific Time zone specified
-    const timeEntriesResponse = await fetch(
-      "https://api.harvestapp.com/api/v2/time_entries?timezone=America/Los_Angeles",
+    // Fetch project budget report data from Harvest API
+    const projectReportResponse = await fetch(
+      "https://api.harvestapp.com/api/v2/reports/project_budget?is_active=true",
       {
         headers: {
           Authorization: `Bearer ${process.env.HARVEST_API_TOKEN}`,
@@ -56,23 +46,14 @@ export const loader = async ({ request }) => {
       },
     );
 
-    if (!timeEntriesResponse.ok) {
-      console.error(
-        "Time Entries API Response Status:",
-        timeEntriesResponse.status,
-      );
-      console.error(
-        "Time Entries API Response Status Text:",
-        timeEntriesResponse.statusText,
-      );
-      const errorText = await timeEntriesResponse.text();
-      console.error("Time Entries API Response Text:", errorText);
-      throw new Error("Failed to fetch time entries from Harvest API");
+    if (!userResponse.ok || !projectReportResponse.ok) {
+      throw new Error("Failed to fetch data from Harvest API");
     }
 
-    const timeEntriesData = await timeEntriesResponse.json();
+    const userData = await userResponse.json();
+    const projectReportData = await projectReportResponse.json();
 
-    return json({ user: userData, timeEntries: timeEntriesData.time_entries });
+    return json({ user: userData, projects: projectReportData.results });
   } catch (error) {
     console.error("Error fetching data from Harvest API:", error);
     throw new Error("Failed to fetch data from Harvest API");
@@ -80,15 +61,9 @@ export const loader = async ({ request }) => {
 };
 
 export default function Index() {
-  const { user, timeEntries } = useLoaderData();
+  const { user, projects } = useLoaderData();
 
   const [selectedDate, setSelectedDate] = useState(new Date());
-
-  const formattedSelectedDate = format(selectedDate, "yyyy-MM-dd");
-
-  const filteredEntries = timeEntries.filter((entry) => {
-    return entry.spent_date === formattedSelectedDate;
-  });
 
   const handleDateChange = (date) => {
     setSelectedDate(new Date(date.start));
@@ -98,7 +73,7 @@ export default function Index() {
     <Page fullWidth>
       <BlockStack gap="500">
         <InlineGrid columns={["oneThird", "twoThirds"]}>
-          {/* User Information Section */}
+          {/* Left Column: User Information and Date Picker */}
           <Layout.Section>
             <Card background="bg-surface-warning" padding="500">
               <BlockStack gap="500">
@@ -125,7 +100,6 @@ export default function Index() {
               </BlockStack>
             </Card>
 
-            {/* Date Picker Section */}
             <Box paddingBlockStart="400">
               <Card>
                 <DatePicker
@@ -144,33 +118,57 @@ export default function Index() {
             </Box>
           </Layout.Section>
 
+          {/* Right Column: Project Data */}
           <Layout.Section>
-            {/* Time Entries Section */}
             <Box minHeight="1200px">
               <Card>
                 <BlockStack gap="500">
                   <Text as="h2" variant="headingLg">
-                    Time Entries for{" "}
-                    {selectedDate.toLocaleDateString("en-US", {
-                      timeZone: "America/Los_Angeles",
-                    })}
+                    Active Projects Details
                   </Text>
                   <List>
-                    {filteredEntries.length > 0 ? (
-                      filteredEntries.map((entry) => (
-                        <List.Item key={entry.id}>
-                          <Text as="p" variant="headingMd">
-                            {entry.project.name} - {entry.task.name}
-                          </Text>
-                          <Text as="p" tone="magic">
-                            Client: {entry.client.name}
-                          </Text>
-                          <Text as="p">Hours: {entry.hours}</Text>
-                          <Text as="p">Notes: {entry.notes || "No notes"}</Text>
-                        </List.Item>
-                      ))
+                    {projects.length > 0 ? (
+                      projects.map((project) => {
+                        const budget = project.budget || 0;
+                        const budgetSpent = project.budget_spent || 0;
+                        const budgetRemaining = project.budget_remaining || 0;
+                        const progress =
+                          budget > 0 ? (budgetSpent / budget) * 100 : 0;
+                        const progressBarTone =
+                          budgetSpent > budget ? "critical" : "highlight";
+
+                        return (
+                          <List.Item key={project.project_id}>
+                            <BlockStack gap="200">
+                              <Text as="p" variant="headingMd">
+                                Client:{" "}
+                                {project.client_name || "Unknown Client"}
+                              </Text>
+                              <Text as="p">
+                                Project:{" "}
+                                {project.project_name || "Unnamed Project"}
+                              </Text>
+                              <Text as="p" variant="headingSm">
+                                Budget Progress:
+                              </Text>
+                              <Text as="p">
+                                Spent: {budgetSpent} hours / {budget} hours
+                              </Text>
+                              <div>
+                                <ProgressBar
+                                  progress={progress}
+                                  tone={progressBarTone}
+                                />
+                              </div>
+                              <Text as="p">
+                                Remaining Hours: {budgetRemaining} hours
+                              </Text>
+                            </BlockStack>
+                          </List.Item>
+                        );
+                      })
                     ) : (
-                      <Text as="p">No time entries for this date.</Text>
+                      <Text as="p">No projects available.</Text>
                     )}
                   </List>
                 </BlockStack>
